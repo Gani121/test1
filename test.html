@@ -34,12 +34,17 @@
             border-radius: 5px;
             cursor: pointer;
         }
+        #fallback-message {
+            display: none;
+            margin-top: 20px;
+            color: red;
+        }
     </style>
 </head>
 <body>
     <h1>Decode QR Code from Hardcoded Image</h1>
     <canvas id="qr-canvas" style="display: none;"></canvas>
-    <img id="qr-image" src="Screenshot_2024-12-08-01-03-07-66_7352322957d4404136654ef4adb64504.jpg" alt="QR Code">
+    <img id="qr-image" src="path-to-your-qr-image.png" alt="QR Code">
     <div id="details-container">
         <h2>Payment Details:</h2>
         <p><strong>Merchant Name:</strong> <span id="merchant-name"></span></p>
@@ -48,6 +53,10 @@
         <p><strong>Transaction Note:</strong> <span id="note"></span></p>
     </div>
     <button id="pay-button" onclick="pay()">Pay with UPI</button>
+    <div id="fallback-message">
+        <p>Couldn't automatically open the UPI app. Please click the button below to pay:</p>
+        <button onclick="window.location.href = upiUrl">Open UPI App</button>
+    </div>
 
     <script>
         let upiUrl = "";
@@ -111,10 +120,20 @@
             decodeQRCodeFromImage("qr-image", "qr-canvas");
         };
 
-        // Redirect to UPI payment
+        // Redirect to UPI payment after a slight delay
         function pay() {
             if (upiUrl.startsWith("upi://")) {
-                window.location.href = upiUrl;
+                // Adding a slight delay to allow the browser to process the redirect
+                setTimeout(() => {
+                    // For Android, try to use the intent:// scheme
+                    const intentUrl = `intent://${upiUrl.replace('upi://', '')}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end;`;
+
+                    // Try opening the UPI app with intent:// scheme (Android)
+                    window.location.href = intentUrl;
+                    
+                    // Show fallback message in case the redirection doesn't work
+                    document.getElementById("fallback-message").style.display = "block";
+                }, 500); // 500ms delay to ensure the action is processed correctly
             } else {
                 alert("Invalid UPI URL");
             }
