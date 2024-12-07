@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decode QR Code from Image</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            margin-top: 20px;
+        }
+        #details-container {
+            display: none;
+            margin-top: 20px;
+            text-align: left;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        #pay-button {
+            display: none;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Decode QR Code from Hardcoded Image</h1>
+    <canvas id="qr-canvas" style="display: none;"></canvas>
+    <img id="qr-image" src="qr.png" alt="QR Code">
+    <div id="details-container">
+        <h2>Payment Details:</h2>
+        <p><strong>Merchant Name:</strong> <span id="merchant-name"></span></p>
+        <p><strong>UPI ID:</strong> <span id="upi-id"></span></p>
+        <p><strong>Transaction Amount:</strong> <span id="amount"></span></p>
+        <p><strong>Transaction Note:</strong> <span id="note"></span></p>
+    </div>
+    <button id="pay-button" onclick="pay()">Pay with UPI</button>
+
+    <script>
+        let upiUrl = "";
+
+        // Parse UPI URL and extract details
+        function parseUPIUrl(url) {
+            const params = new URLSearchParams(url.split('?')[1]);
+            return {
+                merchantName: params.get("pn") || "N/A",
+                upiId: params.get("pa") || "N/A",
+                amount: params.get("am") || "N/A",
+                note: params.get("tn") || "N/A"
+            };
+        }
+
+        // Decode QR Code from an image
+        function decodeQRCodeFromImage(imageId, canvasId) {
+            const img = document.getElementById(imageId);
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext("2d");
+
+            // Set canvas size to match the image
+            canvas.width = img.width;
+            canvas.height = img.height;
+
+            // Draw the image onto the canvas
+            ctx.drawImage(img, 0, 0, img.width, img.height);
+
+            // Extract image data from the canvas
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+            // Decode QR code
+            const code = jsQR(imageData.data, canvas.width, canvas.height);
+            if (code) {
+                console.log("QR Code decoded:", code.data);
+                upiUrl = code.data;
+
+                // Validate and parse UPI URL
+                if (upiUrl.startsWith("upi://")) {
+                    const details = parseUPIUrl(upiUrl);
+
+                    // Display details
+                    document.getElementById("merchant-name").textContent = details.merchantName;
+                    document.getElementById("upi-id").textContent = details.upiId;
+                    document.getElementById("amount").textContent = details.amount;
+                    document.getElementById("note").textContent = details.note;
+                    document.getElementById("details-container").style.display = "block";
+
+                    // Show the payment button
+                    document.getElementById("pay-button").style.display = "block";
+                } else {
+                    alert("Invalid UPI QR Code");
+                }
+            } else {
+                alert("Failed to decode QR Code.");
+            }
+        }
+
+        // Start decoding when the page loads
+        window.onload = () => {
+            decodeQRCodeFromImage("qr-image", "qr-canvas");
+        };
+
+        // Redirect to UPI payment
+        function pay() {
+            if (upiUrl.startsWith("upi://")) {
+                window.location.href = upiUrl;
+            } else {
+                alert("Invalid UPI URL");
+            }
+        }
+    </script>
+</body>
+</html>
